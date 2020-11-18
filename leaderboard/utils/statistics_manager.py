@@ -234,6 +234,28 @@ class StatisticsManager(object):
 
         return global_record
 
+    def check_checkpoint(self, endpoint):
+
+        data = fetch_dict(endpoint)
+
+        if data and dictor(data, '_checkpoint.records'):
+            records = data['_checkpoint']['records']
+            progress = data['_checkpoint']['progress']
+
+            if data['entry_status'] == 'Crashed':
+                # If the simulation crashed, the progress will be one less than the amount of routes.
+                # This is okay, as we want to redo the last simulation
+                pass
+
+            elif len(records) != progress[0]:
+                # 'progress' is checked to resume the simulation so it must coincide with the number of routes
+                print("\033[93m\033[1mWARNING: Detected missmatch at the checkpoint between the progress ({}) "
+                    "and the amount of routes registered ({}). Modifying progress to match "
+                    "the recorded value.\033[0m".format(progress[0], len(records)))
+                data['_checkpoint']['progress'][0] = len(records)
+
+        save_dict(endpoint, data)
+
     @staticmethod
     def save_record(route_record, index, endpoint):
         data = fetch_dict(endpoint)

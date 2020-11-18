@@ -388,6 +388,7 @@ class LeaderboardEvaluator(object):
         route_indexer = RouteIndexer(args.routes, args.scenarios, args.repetitions)
 
         if args.resume:
+            self.statistics_manager.check_checkpoint(args.checkpoint)
             route_indexer.resume(args.checkpoint)
             self.statistics_manager.resume(args.checkpoint)
         else:
