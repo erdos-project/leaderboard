@@ -204,6 +204,7 @@ class SensorInterface(object):
 
         # Only sensor that doesn't get the data on tick, needs special treatment
         self._opendrive_tag = None
+        self._first_reading = True
 
 
     def register_sensor(self, tag, sensor_type, sensor):
@@ -228,7 +229,8 @@ class SensorInterface(object):
 
                 # Don't wait for the opendrive sensor
                 if self._opendrive_tag and self._opendrive_tag not in data_dict.keys() \
-                        and len(self._sensors_objects.keys()) == len(data_dict.keys()) + 1:
+                        and len(self._sensors_objects.keys()) == len(data_dict.keys()) + 1 \
+                        and not self._first_reading:
                     break
 
                 sensor_data = self._new_data_buffers.get(True, self._queue_timeout)
@@ -237,4 +239,5 @@ class SensorInterface(object):
         except Empty:
             raise SensorReceivedNoData("A sensor took too long to send their data")
 
+        self._first_reading = False
         return data_dict

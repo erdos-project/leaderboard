@@ -11,6 +11,7 @@ It must not be modified and is for reference only!
 """
 
 from __future__ import print_function
+import heapq
 import signal
 import sys
 import time
@@ -45,10 +46,12 @@ class ScenarioManager(object):
     """
 
 
-    def __init__(self, timeout, debug_mode=False):
+    def __init__(self, timeout, debug_mode=False, timely_commands=False, frame_rate=20):
         """
         Setups up the parameters, which will be filled at load_scenario()
         """
+        self.timely_commands = timely_commands
+        self.frame_rate = frame_rate
         self.scenario = None
         self.scenario_tree = None
         self.scenario_class = None
@@ -79,6 +82,16 @@ class ScenarioManager(object):
         # Use the callback_id inside the signal handler to allow external interrupts
         signal.signal(signal.SIGINT, self.signal_handler)
 
+        self._delayed_cmds = []
+        brake_control = carla.VehicleControl()
+        brake_control.throttle = 0
+        brake_control.brake = 1
+        brake_control.steer = 0
+        brake_control.reverse = False
+        brake_control.hand_brake = False
+        brake_control.manual_gear_shift = False
+        self._last_cmd = (0, 0, brake_control)
+
     def signal_handler(self, signum, frame):
         """
         Terminate scenario ticking when receiving a signal interrupt
@@ -102,6 +115,7 @@ class ScenarioManager(object):
         """
 
         GameTime.restart()
+        agent.frame_delta_ms = int(1000 / self.frame_rate)
         self._agent = AgentWrapper(agent)
         self.scenario_class = scenario
         self.scenario = scenario.scenario
@@ -148,8 +162,20 @@ class ScenarioManager(object):
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
 
+            game_time_ms = int(GameTime.get_time() * 1000)
             try:
-                ego_action = self._agent()
+                res = self._agent()
+                if self.timely_commands:
+                    assert isinstance(res, tuple), 'Agent did not return the runtime'
+                    ego_action, runtime = res
+                else:
+                    if isinstance(res, tuple):
+                        ego_action = res[0]
+                    else:
+                        ego_action = res
+                    runtime = 0
+                heapq.heappush(self._delayed_cmds,
+                               (game_time_ms + runtime, game_time_ms, ego_action))
 
             # Special exception inside the agent that isn't caused by the agent
             except SensorReceivedNoData as e:
@@ -158,7 +184,12 @@ class ScenarioManager(object):
             except Exception as e:
                 raise AgentError(e)
 
-            self.ego_vehicles[0].apply_control(ego_action)
+            while len(self._delayed_cmds) > 0 and game_time_ms >= self._delayed_cmds[0][0]:
+                self._last_cmd = self._delayed_cmds[0]
+                heapq.heappop(self._delayed_cmds)
+
+            print("Command at {} using {}".format(self._last_cmd[0], self._last_cmd[1]))
+            self.ego_vehicles[0].apply_control(self._last_cmd[2])
 
             # Tick scenario
             self.scenario_tree.tick_once()

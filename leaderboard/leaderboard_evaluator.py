@@ -58,13 +58,14 @@ class LeaderboardEvaluator(object):
     # Tunable parameters
     client_timeout = 10.0  # in seconds
     wait_for_world = 20.0  # in seconds
-    frame_rate = 20.0      # in Hz
 
     def __init__(self, args, statistics_manager):
         """
         Setup CARLA client and world
         Setup ScenarioManager
         """
+        self.frame_rate = float(args.frame_rate)      # in Hz
+        assert args.frame_rate >= 20, "Frame rate cannot be less than 20"
         self.statistics_manager = statistics_manager
         self.sensors = None
         self.sensor_icons = []
@@ -91,7 +92,7 @@ class LeaderboardEvaluator(object):
         self.module_agent = importlib.import_module(module_name)
 
         # Create the ScenarioManager
-        self.manager = ScenarioManager(args.timeout, args.debug > 1)
+        self.manager = ScenarioManager(args.timeout, args.debug > 1, args.timely_commands, self.frame_rate)
 
         # Time control for summary purposes
         self._start_time = GameTime.get_time()
@@ -424,7 +425,7 @@ def main():
     parser.add_argument('--debug', type=int, help='Run with debug output', default=0)
     parser.add_argument('--record', type=str, default='',
                         help='Use CARLA recording feature to create a recording of the scenario')
-    parser.add_argument('--timeout', default="60.0",
+    parser.add_argument('--timeout', default="120.0",
                         help='Set the CARLA client timeout value in seconds')
 
     # simulation setup
@@ -448,6 +449,8 @@ def main():
     parser.add_argument("--checkpoint", type=str,
                         default='./simulation_results.json',
                         help="Path to checkpoint used for saving statistics and resuming")
+    parser.add_argument("--timely-commands", type=bool, default=False, help="Delay commands by their runtime")
+    parser.add_argument("--frame-rate", type=int, default=20, help="Simulator frame rate")
 
     arguments = parser.parse_args()
 

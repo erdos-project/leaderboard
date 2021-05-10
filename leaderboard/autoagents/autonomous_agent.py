@@ -46,6 +46,9 @@ class AutonomousAgent(object):
 
         self.wallclock_t0 = None
 
+        self.latest_command = None
+        self.frame_delta_ms = 0
+
     def setup(self, path_to_conf_file):
         """
         Initialize everything needed by your agent and set the track attribute to the right type:
@@ -101,9 +104,19 @@ class AutonomousAgent(object):
         Execute the agent call, e.g. agent()
         Returns the next vehicle controls
         """
-        input_data = self.sensor_interface.get_data()
-
         timestamp = GameTime.get_time()
+        game_time = int(timestamp * 1000)
+        must_execute = False
+        if self.latest_command is None or \
+           game_time == self.next_sensor_timestamp:
+            input_data = self.sensor_interface.get_data()
+            must_execute = True
+            if self.latest_command is None:
+                self.next_sensor_timestamp = \
+                    game_time + 50 + self.frame_delta_ms
+            else:
+                # This value must be changed when sensor_tick is changed.
+                self.next_sensor_timestamp += 50
 
         if not self.wallclock_t0:
             self.wallclock_t0 = GameTime.get_wallclocktime()
@@ -112,10 +125,11 @@ class AutonomousAgent(object):
 
         print('======[Agent] Wallclock_time = {} / {} / Sim_time = {} / {}x'.format(wallclock, wallclock_diff, timestamp, timestamp/(wallclock_diff+0.001)))
 
-        control = self.run_step(input_data, timestamp)
-        control.manual_gear_shift = False
+        if must_execute:
+            # Only execute agent when new camera/lidar data is available.
+            self.latest_command = self.run_step(input_data, timestamp)
 
-        return control
+        return self.latest_command
 
     def set_global_plan(self, global_plan_gps, global_plan_world_coord):
         """

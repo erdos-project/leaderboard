@@ -101,6 +101,8 @@ class AgentWrapper(object):
                     bp.set_attribute('lens_circle_falloff', str(3.0))
                     bp.set_attribute('chromatic_aberration_intensity', str(0.5))
                     bp.set_attribute('chromatic_aberration_offset', str(0))
+                    # Change __call__ in autonomous agent if you change sensor_tick.
+                    bp.set_attribute('sensor_tick', '0.05')
 
                     sensor_location = carla.Location(x=sensor_spec['x'], y=sensor_spec['y'],
                                                      z=sensor_spec['z'])
@@ -109,15 +111,16 @@ class AgentWrapper(object):
                                                      yaw=sensor_spec['yaw'])
                 elif sensor_spec['type'].startswith('sensor.lidar'):
                     bp.set_attribute('range', str(85))
-                    bp.set_attribute('rotation_frequency', str(10))
+                    bp.set_attribute('rotation_frequency', str(20))
                     bp.set_attribute('channels', str(64))
                     bp.set_attribute('upper_fov', str(10))
                     bp.set_attribute('lower_fov', str(-30))
                     bp.set_attribute('points_per_second', str(600000))
-                    bp.set_attribute('atmosphere_attenuation_rate', str(0.004))
-                    bp.set_attribute('dropoff_general_rate', str(0.45))
-                    bp.set_attribute('dropoff_intensity_limit', str(0.8))
-                    bp.set_attribute('dropoff_zero_intensity', str(0.4))
+                    # bp.set_attribute('atmosphere_attenuation_rate', str(0.004))
+                    # bp.set_attribute('dropoff_general_rate', str(0.45))
+                    # bp.set_attribute('dropoff_intensity_limit', str(0.8))
+                    # bp.set_attribute('dropoff_zero_intensity', str(0.4))
+                    bp.set_attribute('sensor_tick', '0.05')
                     sensor_location = carla.Location(x=sensor_spec['x'], y=sensor_spec['y'],
                                                      z=sensor_spec['z'])
                     sensor_rotation = carla.Rotation(pitch=sensor_spec['pitch'],
