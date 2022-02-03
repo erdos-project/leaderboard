@@ -6,13 +6,13 @@ source leaderboard/scripts/utils.sh
 function execute_scenario {
     while true; do
         execute_scenario_once $1 $2 $3 $4 $5 $6
-        finished=`grep "score_composed" ${BASE_DIR}/logs_nopolicy_town_$1_route_$2_timely_$3_edet_$4_run_$5/results.json`
+        finished=`grep "score_composed" ${BASE_DIR}/logs_frequency_town_$1_route_$2_timely_$3_edet_$4_run_$5/results.json`
         if [[ ! -z "$finished" ]] ; then
             break
         fi
         echo "Deleting incomplete experiment"
         # Deleting the incomplete logs.
-        rm -r ${BASE_DIR}/logs_nopolicy_town_$1_route_$2_timely_$3_edet_$4_run_$5/
+        rm -r ${BASE_DIR}/logs_frequency_town_$1_route_$2_timely_$3_edet_$4_run_$5/
     done
 }
 
@@ -23,7 +23,7 @@ function execute_scenario_once {
     # $4 detector
     # $5 number of repetitions
     # $6 frame rate
-    export RECORD_PATH=${BASE_DIR}/logs_nopolicy_town_$1_route_$2_timely_$3_edet_$4_run_$5/
+    export RECORD_PATH=${BASE_DIR}/logs_frequency_town_$1_route_$2_timely_$3_edet_$4_run_$5/
     if [ -d "${RECORD_PATH}" ]; then
         echo "Experiment already executed"
         return
@@ -55,16 +55,16 @@ towns=(1)
 routes=(1 2 3 4 5 6 7 8 9)
 timely_setup=(True)
 detectors=(4)
-num_rep=5
+num_rep=7
 frame_rate=40
 
 for town in ${towns[@]}; do
-    for route in ${routes[@]}; do
-        export ROUTES=${LEADERBOARD_ROOT}/data/town_${town}_route_${route}.xml
-        for timely in ${timely_setup[@]}; do
-            for detector in ${detectors[@]}; do
-                echo "[x] Running with EfficientDet D$detector"
-                for (( rep=1; rep <= ${num_rep}; rep++ )); do
+    for (( rep=1; rep <= ${num_rep}; rep++ )); do
+	for route in ${routes[@]}; do
+            export ROUTES=${LEADERBOARD_ROOT}/data/town_${town}_route_${route}.xml
+            for timely in ${timely_setup[@]}; do
+		for detector in ${detectors[@]}; do
+                    echo "[x] Running with EfficientDet D$detector"
                     execute_scenario $town $route $timely $detector $rep $frame_rate
                 done
             done
