@@ -50,8 +50,21 @@ function block_until_one_finishes {
 
 function execute_carla_and_pylot {
     # $1 frame rate
-    echo "[x] Starting the CARLA simulator"
-    SDL_VIDEODRIVER=offscreen ${CARLA_HOME}/CarlaUE4.sh -opengl -windowed -ResX=800 -ResY=600 -carla-server -benchmark -fps=20 -quality-level=Epic &
+    # $2 simulator port
+    # $3 traffic manager port
+
+    PORT=2000
+    if [[ ! -z "$2" ]] ; then
+        PORT=$2
+    fi
+
+    TRAFFIC_MANAGER_PORT=8000
+    if [[ ! -z "$3" ]] ; then
+        TRAFFIC_MANAGER_PORT=$3
+    fi
+
+    echo "[x] Starting the CARLA simulator on port ${PORT}"
+    SDL_VIDEODRIVER=offscreen ${CARLA_HOME}/CarlaUE4.sh -opengl -windowed -ResX=800 -ResY=600 -carla-server -benchmark -fps=20 -quality-level=Epic -world-port=$PORT &
     sleep 10
 
     echo "[x] Starting the leaderboard"
@@ -67,5 +80,7 @@ function execute_carla_and_pylot {
             --record=${RECORD_PATH} \
             --resume=${RESUME} \
             --timeout=360 \
-	    --frame-rate=$1 &
+	    --frame-rate=$1 \
+            --port=${PORT} \
+            --trafficManagerPort=${TRAFFIC_MANAGER_PORT} &
 }
